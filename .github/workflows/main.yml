@@ -40,14 +40,20 @@ jobs:
         cd android-kernel
         repo sync
 
-    - name: Modify Configs
+    - name: Check File Existence and Modify Configs
       run: |
         cd android-kernel
-        # Modify gki_defconfig
-        cd common
-        sed -i 's/^# CONFIG_LOCALVERSION_AUTO is not set/CONFIG_LOCALVERSION="-Salsa"/' arch/arm64/configs/gki_defconfig
-        # Modify build.config.gki
-        sed -i 's/^POST_DEFCONFIG_CMDS="check_defconfig"/# POST_DEFCONFIG_CMDS="check_defconfig"/' common/build.config.gki
+        # Cek apakah direktori dan file yang dibutuhkan ada
+        if [ -f "common/build.config.gki" ]; then
+          # Modifikasi gki_defconfig
+          cd common
+          sed -i 's/^# CONFIG_LOCALVERSION_AUTO is not set/CONFIG_LOCALVERSION="-Salsa"/' arch/arm64/configs/gki_defconfig
+          # Modifikasi build.config.gki
+          sed -i 's/^POST_DEFCONFIG_CMDS="check_defconfig"/# POST_DEFCONFIG_CMDS="check_defconfig"/' build.config.gki
+        else
+          echo "File common/build.config.gki tidak ditemukan. Pastikan repo sudah disinkronkan dengan benar."
+          exit 1
+        fi
 
     - name: Build Kernel
       run: |
