@@ -1,0 +1,55 @@
+name: Build Kernel
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+
+    - name: Set Up Ubuntu
+      run: |
+        sudo apt update -y && sudo apt upgrade -y
+        sudo apt install -y nano bc bison ca-certificates curl flex gcc git libc6-dev libssl-dev openssl python-is-python3 ssh wget zip zstd sudo make clang gcc-arm-linux-gnueabi software-properties-common build-essential libarchive-tools gcc-aarch64-linux-gnu
+        sudo apt install -y build-essential libssl-dev libffi-dev libncurses5-dev zlib1g zlib1g-dev libreadline-dev libbz2-dev libsqlite3-dev make gcc
+        sudo apt install -y pigz python3 cpio lld llvm g++-aarch64-linux-gnu libelf-dev repo
+
+    - name: Configure Git
+      run: |
+        git config --global user.name "dabskutz"
+        git config --global user.email "dabskutz@proton.me"
+
+    - name: Create Kernel Directory
+      run: |
+        mkdir android-kernel
+        cd android-kernel
+
+    - name: Initialize Repo
+      run: |
+        cd android-kernel
+        repo init -u https://android.googlesource.com/kernel/manifest -b common-android14-6.1
+
+    - name: Sync Repo
+      run: |
+        cd android-kernel
+        repo sync
+
+    - name: Modify Configs
+      run: |
+        cd android-kernel
+        # Modify gki_defconfig
+        cd common
+        sed -i 's/^# CONFIG_LOCALVERSION_AUTO is not set/CONFIG_LOCALVERSION="-Salsa"/' arch/arm64/configs/gki_defconfig
+        # Modify build.config.gki
+        sed -i 's/^POST_DEFCONFIG_CMDS="check_defconfig"/# POST_DEFCONFIG_CMDS="check_defconfig"/' common/build.config.gki
+
+    - name: Build Kernel
+      run: |
+        cd android-kernel
+        LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 ./build/build.sh
