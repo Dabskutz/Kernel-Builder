@@ -1,0 +1,71 @@
+name: Build Kernel
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+
+    - name: Set Up Ubuntu
+      run: |
+        sudo apt update -y && sudo apt upgrade -y
+        sudo apt install -y nano bc bison ca-certificates curl flex gcc git libc6-dev libssl-dev openssl python-is-python3 ssh wget zip zstd sudo make clang gcc-arm-linux-gnueabi software-properties-common build-essential libarchive-tools gcc-aarch64-linux-gnu
+        sudo apt install -y build-essential libssl-dev libffi-dev libncurses5-dev zlib1g zlib1g-dev libreadline-dev libbz2-dev libsqlite3-dev make gcc
+        sudo apt install -y pigz python3 cpio lld llvm g++-aarch64-linux-gnu libelf-dev repo
+
+    - name: Configure Git
+      run: |
+        git config --global user.name "dabskutz"
+        git config --global user.email "dabskutz@proton.me"
+
+    - name: Create Kernel Directory
+      run: |
+        mkdir android-kernel
+        cd android-kernel
+
+    - name: Initialize Repo
+      run: |
+        cd android-kernel
+        repo init -u https://android.googlesource.com/kernel/manifest -b common-android14-6.1
+
+    - name: Sync Repo
+      run: |
+        cd android-kernel
+        repo sync
+
+    - name: Check File Existence and Modify Configs
+      run: |
+        cd android-kernel
+        # Cek apakah direktori dan file yang dibutuhkan ada
+        if [ -f "common/build.config.gki" ]; then
+          # Modifikasi gki_defconfig
+          cd common
+          sed -i 's/^# CONFIG_LOCALVERSION_AUTO is not set/CONFIG_LOCALVERSION="-Salsa"/' arch/arm64/configs/gki_defconfig
+          # Modifikasi build.config.gki
+          sed -i 's/^POST_DEFCONFIG_CMDS="check_defconfig"/# POST_DEFCONFIG_CMDS="check_defconfig"/' build.config.gki
+        else
+          echo "File common/build.config.gki tidak ditemukan. Pastikan repo sudah disinkronkan dengan benar."
+          exit 1
+        fi
+
+    - name: Build Kernel
+      run: |
+        cd android-kernel
+        tools/bazel run --lto=thin //common:kernel_aarch64_dist -- --dist_dir=out/dist
+
+      - name: Upload Kernel Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: GKI-Kernel-6.1-Salsa
+        path: |
+          android-kernel/out/dist/Image
+          android-kernel/out/dist/Image.gz
+          android-kernel/out/dist/*.ko
+        retention-days: 5
