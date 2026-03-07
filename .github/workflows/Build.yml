@@ -28,7 +28,6 @@ jobs:
     - name: Create Kernel Directory
       run: |
         mkdir android-kernel
-        cd android-kernel
 
     - name: Initialize Repo
       run: |
@@ -60,7 +59,7 @@ jobs:
         cd android-kernel
         tools/bazel run --lto=thin //common:kernel_aarch64_dist -- --dist_dir=out/dist
 
-      - name: Upload Kernel Artifact
+    - name: Upload Kernel Artifact
       uses: actions/upload-artifact@v4
       with:
         name: GKI-Kernel-6.1-Salsa
