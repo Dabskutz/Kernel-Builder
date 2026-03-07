@@ -58,4 +58,14 @@ jobs:
     - name: Build Kernel
       run: |
         cd android-kernel
-        LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 ./build/build.sh
+        tools/bazel run --lto=thin //common:kernel_aarch64_dist -- --dist_dir=out/dist
+
+      - name: Upload Kernel Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: GKI-Kernel-6.1-Salsa
+        path: |
+          android-kernel/out/dist/Image
+          android-kernel/out/dist/Image.gz
+          android-kernel/out/dist/*.ko
+        retention-days: 5
