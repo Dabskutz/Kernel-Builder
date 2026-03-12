@@ -1,3 +1,7 @@
+# Attention
+## Currently still in development stage.
+
+
 # Kernel-Builder
 
 Automated GitHub Actions workflow for building a custom Android kernel targeting the **Xiaomi Peridot** (Redmi Turbo 3 / Poco F6).
